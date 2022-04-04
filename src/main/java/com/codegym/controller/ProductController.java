@@ -3,14 +3,18 @@ package com.codegym.controller;
 import com.codegym.model.Product;
 import com.codegym.service.product.IProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 
 @RestController
@@ -20,6 +24,9 @@ public class ProductController {
 
     @Autowired
     private IProductService productService;
+
+    @Value("C:/Users/nguye/OneDrive/Desktop/image/")
+    private String uploadPath;
 
     @GetMapping
     public ResponseEntity<Page<Product>> findAllProduct(@RequestParam(name = "q") Optional<String> q, @PageableDefault(value = 5) Pageable pageable) {
@@ -45,7 +52,16 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+    public ResponseEntity<Product> createProduct(@RequestPart("image") MultipartFile image,@RequestPart Product product) {
+    String fileName = image.getOriginalFilename();
+    long currentTime = System.currentTimeMillis();
+    fileName = currentTime + fileName;
+        try {
+            FileCopyUtils.copy(image.getBytes(), new File(uploadPath + fileName));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        product.setImage(fileName);
         return new ResponseEntity<>(productService.save(product), HttpStatus.CREATED);
     }
 
@@ -76,4 +92,5 @@ public class ProductController {
         }
         return  new ResponseEntity<>(products, HttpStatus.OK);
     }
+
 }

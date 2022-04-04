@@ -4,10 +4,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.*;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -17,7 +14,9 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.thymeleaf.spring5.SpringTemplateEngine;
 import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
@@ -35,6 +34,7 @@ import java.util.Properties;
 @EnableSpringDataWebSupport//Để hỗ trợ phân trang
 @EnableJpaRepositories("com.codegym.repository") //Để quét các repository
 @EnableTransactionManagement//annoutation sử dụng để quản lý transaction
+@PropertySource("classpath:upload_file.properties")
 @EnableAspectJAutoProxy
 public class AppConfig implements WebMvcConfigurer, ApplicationContextAware {
     private ApplicationContext applicationContext;
@@ -74,9 +74,20 @@ public class AppConfig implements WebMvcConfigurer, ApplicationContextAware {
         return viewResolver;
     }
 
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        //Override phương thức add resource handler để cấu hình đường dẫn file tĩnh
+        //=> để lưu trữ các file ảnh, mp3, mp4 khi được upload lên server
+        registry.addResourceHandler("/image/**")
+                .addResourceLocations("file:" + uploadPath); //Để khai báo cấu hình lữu trữ trên server
+    }
 
-
-
+    @Bean
+    public CommonsMultipartResolver multipartResolver() {
+        CommonsMultipartResolver multipartResolver = new CommonsMultipartResolver();
+        multipartResolver.setMaxUploadSizePerFile(52428800);//Set dung lượng tối đa khi upload => 5MB // Không giới hạn thì để -1
+        return multipartResolver;
+    }
 
     @Bean//Bean để khởi tạo entity manager
     public EntityManager entityManager(EntityManagerFactory entityManagerFactory) {
